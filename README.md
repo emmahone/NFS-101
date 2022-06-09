@@ -4,7 +4,7 @@
 
 ## What is NFS?
 
-`NFS` (Network File System) is a protocol that was designed to provide transparent remote access to shared filesystems across a network. In theory, the protocol is intended to be independent of the underlying machine, operating system, network architecture, and transport protocol. To achieve this, NFS relies on the use of `Remote Procedure Call` (RPC) primitives built on top of an `eXternal Data Representation` (XDR).
+Network File System (`NFS`) is a protocol that was designed to provide transparent remote access to shared filesystems across a network. In theory, the protocol is intended to be independent of the underlying machine, operating system, network architecture, and transport protocol. To achieve this, NFS relies on the use of `Remote Procedure Call` (RPC) primitives built on top of an `eXternal Data Representation` (XDR).
 Source: https://datatracker.ietf.org/doc/html/rfc1813#section-1 
 
 NFS is `file-type` storage as opposed to block or object storage. This means that the data is stored in a filesystem hierarchical structure and accessed by files and directories rather than blocks of bits directly on storage. The filesystem on the server side determines the characteristics of the filesystem that is being consumed by a client. As an example, if a unix-style filesystem like XFS backs the path being shared via NFS, then any client consuming/mounting that storage should expect XFS-like behavior of that filesystem. In practice this means that most k8/OCP clients expect unix-like posix permissions and filesystem behavior. This is typically referred to as `AUTH_UNIX style authentication` in the ietf RFC.
