@@ -4,7 +4,7 @@
 
 ## What is NFS?
 
-Network File System (`NFS`) is a protocol that was designed to provide transparent remote access to shared filesystems across a network. In theory, the protocol is intended to be independent of the underlying machine, operating system, network architecture, and transport protocol. To achieve this, NFS relies on the use of `Remote Procedure Call` (RPC) primitives built on top of an `eXternal Data Representation` (XDR).
+`NFS` (Network File System) is a protocol that was designed to provide transparent remote access to shared filesystems across a network. In theory, the protocol is intended to be independent of the underlying machine, operating system, network architecture, and transport protocol. To achieve this, NFS relies on the use of `Remote Procedure Call` (RPC) primitives built on top of an `eXternal Data Representation` (XDR).
 Source: https://datatracker.ietf.org/doc/html/rfc1813#section-1 
 
 NFS is `file-type` storage as opposed to block or object storage. This means that the data is stored in a filesystem hierarchical structure and accessed by files and directories rather than blocks of bits directly on storage. The filesystem on the server side determines the characteristics of the filesystem that is being consumed by a client. As an example, if a unix-style filesystem like XFS backs the path being shared via NFS, then any client consuming/mounting that storage should expect XFS-like behavior of that filesystem. In practice this means that most k8/OCP clients expect unix-like posix permissions and filesystem behavior. This is typically referred to as `AUTH_UNIX style authentication` in the ietf RFC.
@@ -35,10 +35,10 @@ These RFCs define `terminology, features, protocol, and behavior` for NFS versio
 
 ## What defines the expected client and server relationship in NFS?
 
-v3:
+NFSv3:
 https://datatracker.ietf.org/doc/html/rfc1813#section-4.2
 
-   The NFS version 3 protocol is designed to allow servers to be as simple and general as possible. Sometimes the simplicity of the server can be a problem, if the client implements complicated file system semantics.
+   The NFS version 3 protocol is designed to allow servers to be as simple and general as possible. The NFSv2 and NFSv3 client/server relationship is classifies as being stateless meaning that the server does not maintain an object tracking the state of clients. Sometimes the simplicity of the server can be a problem, if the client implements complicated file system semantics.
 
    For example, some operating systems allow removal of open files.  A process can open a file and, while it is open, remove it from the directory. The file can be read and written as long as the process keeps it open, even though the file has no name in the file system.  It is impossible for a stateless server to implement these semantics.  The client can do some tricks such as renaming the file on remove (to a hidden name), and only physically deleting it on close. The NFS version 3 protocol provides sufficient functionality to implement most file system semantics on a client.
 
@@ -46,11 +46,21 @@ https://datatracker.ietf.org/doc/html/rfc1813#section-4.2
 
    For example, if a server has a file system called /usr and mounts another file system on /usr/src, if a client mounts /usr, it does not see the mounted version of /usr/src. A client could do remote mounts that match the server's mount points to maintain the server's view.  In this example, the client would also have to mount /usr/src in addition to /usr, even if they are from the same server.
 
+NFSv4: 
+https://datatracker.ietf.org/doc/html/rfc3530.txt#section-13
+https://datatracker.ietf.org/doc/html/rfc3530.txt#section-14
+
+   With NFS version 4, the client and server relationship becomes stateful. This means that unlike in v3, the server maintains an object signifying the clients current state. This can have performance impacts, but provides a rich set of operations for additional features. 
+
+  For the NFS version 4 RPC program, there are two traditional RPC procedures: `NULL` and `COMPOUND`.  All other functionality is defined as a set of operations and these operations are defined in normal XDR/RPC syntax and semantics.  However, these operations are encapsulated within the `COMPOUND` procedure.  This requires that the client combine one or more of the NFS version 4 operations into a single request.
+
+   The `NFS4_CALLBACK` program is used to provide server to client signaling and is constructed in a similar fashion as the NFS version 4 program.  The procedures `CB_NULL` and `CB_COMPOUND` are defined in the same way as `NULL` and `COMPOUND` are within the NFS program.  The `CB_COMPOUND` request also encapsulates the remaining operations of the `NFS4_CALLBACK` program.  There is no predefined RPC program number for the `NFS4_CALLBACK` program.  It is up to the client to specify a program number in the "transient" program range.  The program and port number of the `NFS4_CALLBACK` program are provided by the client as part of the `SETCLIENTID/SETCLIENTID_CONFIRM` sequence. The program and port can be changed by another `SETCLIENTID/SETCLIENTID_CONFIRM` sequence, and it is possible to use the sequence to change them within a client incarnation without removing relevant leased client state.
+
 
 ## What do permissions and ownership look like in NFS?
 https://datatracker.ietf.org/doc/html/rfc1813#section-4.4
 
-   The NFS version 3 protocol, strictly speaking, does not  define the permission checking used by servers. However, it is expected that a server will do normal operating system permission checking using `AUTH_UNIX` style authentication as the basis of its protection mechanism, or another stronger form of authentication such as `AUTH_DES` or `AUTH_KERB`. With `AUTH_UNIX` authentication, the server gets the client's `effective uid`, `effective gid`, and `groups` on each call and uses them to check permission. These are the so-called `UNIX credentials`. `AUTH_DES` and `AUTH_KERB` use a network name, or `netname`, as the basis for identification (from which a UNIX server derives the necessary standard UNIX credentials). There are problems with this method that have been solved.
+   The NFS version 3 protocol, strictly speaking, does not  define the permission checking used by servers. However, it is expected that a server will do normal operating system permission checking using `AUTH_UNIX` style authentication as the basis of its protection mechanism, or another stronger form of authentication such as `AUTH_DES` or `AUTH_KERB`. With `AUTH_UNIX` authentication, the server gets the client's `effective uid`, `effective gid`, and `groups` on each call and uses them to check permission. These are the so-called `UNIX credentials`. `AUTH_DES` and `AUTH_KERB` use a network name, or `netname`, as the basis for identification (from which a UNIX server derives the necessary standard UNIX credentials).
 
    Using uid and gid implies that the client and server share the same uid list. Every server and client pair must have the same mapping from user to uid and from group to gid. Since every client can also be a server, this tends to imply that the whole network shares the same uid/gid space. If this is not the case, then it usually falls upon the server to perform some custom mapping of credentials from one authentication domain into another. A discussion of techniques for managing a shared user space or for providing mechanisms for user ID mapping is beyond the scope of this specification.
 
@@ -144,6 +154,34 @@ With NFSv4 introducing file locking in its protocol, clients are put to sleep an
 NFSv3 locking behavior: https://datatracker.ietf.org/doc/html/rfc1813#page-114
 
 NFSv4 locking behavior: https://datatracker.ietf.org/doc/html/rfc3530.txt#section-8
+
+## Parallel NFS
+
+https://datatracker.ietf.org/doc/html/rfc5663
+https://datatracker.ietf.org/doc/html/rfc8435
+
+Parallel NFS (pNFS) allows a separation between the metadata (onto a metadata server) and data (onto a storage device) for a file. The flexible file layout type is defined in this document as an extension to pNFS that allows the use of storage devices that require only a limited degree of interaction with the metadata server and use already-existing protocols. Client-side mirroring is also added to provide replication of files.
+
+If you are interested in pushing the performance boundaries of NFS in terms of the number of clients or shares, pNFS is a great tool. Support for Parallel NFS (pNFS) as part of the NFS v4.1 standard is available as of Red Hat Enterprise Linux 6.4+. The pNFS architecture improves the scalability of NFS, with possible improvements to performance. That is, when a server implements pNFS as well, a client is able to access data through multiple servers concurrently. 
+
+Source: https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/storage_administration_guide/nfs-pnfs
+
+In order to create a pNFS server on RHEL8, you first need to edit `/etc/nfs.conf` on the server. 
+```
+[nfsd]
+
+vers4.2=y
+```
+Then, you can use the pnfs option in your export like below:
+```
+/home/nfsshare 8.8.0.0/16(pnfs)
+```
+
+Source: https://access.redhat.com/documentation/zh-cn/red_hat_enterprise_linux/8/html/deploying_different_types_of_servers/setting-up-pnfs-scsi-on-the-server_enabling-pnfs-scsi-layouts-in-nfs
+
+RHEL7 Docs: https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/storage_administration_guide/nfs-pnfs
+
+RHEL8 Example: https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html/deploying_different_types_of_servers/enabling-pnfs-scsi-layouts-in-nfs_deploying-different-types-of-servers
 
 ## How to create an NFS server in RHEL/Fedora
 https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html/deploying_different_types_of_servers/exporting-nfs-shares_deploying-different-types-of-servers
