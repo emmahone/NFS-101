@@ -10,6 +10,17 @@ Source: https://datatracker.ietf.org/doc/html/rfc1813#section-1
 NFS is `file-type` storage as opposed to block or object storage. This means that the data is stored in a filesystem hierarchical structure and accessed by files and directories rather than blocks of bits directly on storage. The filesystem on the server side determines the characteristics of the filesystem that is being consumed by a client. As an example, if a unix-style filesystem like XFS backs the path being shared via NFS, then any client consuming/mounting that storage should expect XFS-like behavior of that filesystem. In practice this means that most k8/OCP clients expect unix-like posix permissions and filesystem behavior. This is typically referred to as `AUTH_UNIX style authentication` in the ietf RFC.
 
 ## What is the client-server relationship in NFS?
+```mermaid
+graph TD;
+A((NFS server))-->B((Export));
+B-->C((NFS share));
+D((NFS client))-->E((Mount));
+E-->C((NFS share));
+D-->G((Unmount));
+G-->H((Unmount NFS share));
+H-->I((Unmount export));
+I-->B;
+```
 NFS relies on a `client` and `server` relationship model. When a client wants to consume an NFS based remote filesystem, the client needs to know the IP/hostname of the server as well as the port that the server is exposing. The NFS server typically uses port `2049`. Other NFS features can depend on and use other ports. In the context of NFS on RHEL/RHCOS,  the client we use is called `nfs-utils`. When an `nfs-utils` client makes a mount request to an NFS server, it typically specifies its wanted mount options (https://fossies.org/linux/nfs-utils/utils/mount/nfs.man) in the request. The NFS server responds to the client that it either can or cannot fulfill those specified options as well as additional capabilities/requirements of the server. This back/forth is called the negotiation between the client and server. 
 
 ## How is the NFS client and server behavior defined?
