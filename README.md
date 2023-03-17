@@ -109,7 +109,7 @@ https://datatracker.ietf.org/doc/html/rfc7862#section-9.5.3
 
 ## How does file locking work in NFS?
 
-NFSv3 / NFS Lock Manager (NLM):
+# NFSv3 / NFS Lock Manager (NLM):
 https://pubs.opengroup.org/onlinepubs/9629799/chap14.htm
 https://datatracker.ietf.org/doc/html/rfc1813#section-6.2
 
@@ -140,13 +140,36 @@ nlm4_holder
       };
 ~~~
    This structure describes a lock request. The caller_name field identifies the host that is making the request. The fh field identifies the file to lock. The oh field is an opaque object that identifies the host or process that is making the request, and the svid field identifies the process that is making the request.  The l_offset and l_len fields identify the region of the file that the lock controls.  A l_len of 0 means "to end of file".
+   
+```mermaid
+graph TD;
+A((NFSv3 client))-->B((NFSv3 server));
+B-->C((Lock manager));
+C-->D((POSIX lock));
+C-->E((FLOCK lock));
+C-->F((Open file description lock));
+D-->G(File locking API);
+E-->G;
+F-->G;
+G-->B;
+```
+The flowchart above shows the NFSv3 file locking mechanisms. The NFSv3 client sends a request to the NFSv3 server, which in turn communicates with the lock manager. The lock manager checks if the request is for a POSIX lock, a FLOCK lock, or an open file description lock. The appropriate lock type is then used to check for file locks through the File locking API, and the result is sent back to the NFSv3 server. Finally, the NFSv3 server communicates the results back to the client.
 
-NFSv4:
+# NFSv4
 https://datatracker.ietf.org/doc/html/rfc3530.txt#section-1.4.5
 https://datatracker.ietf.org/doc/html/rfc3530.txt#section-8.1
+```mermaid
+graph TD;
+A((NFSv4 client))-->B((NFSv4 server));
+B-->C((Lock manager));
+C-->D((Lock owner));
+D-->E((Lock state));
+E-->F((Lock type));
+F-->G((File locking API));
+G-->B;
+```
 
-
-  With the NFS version 4 protocol, the support for byte range file locking is part of the NFS protocol.The file locking support is structured so that an RPC callback mechanism is not required. This is a departure from the previous versions of the NFS file locking protocol, Network Lock Manager (NLM). The state associated with file locks is maintained at the server under a lease-based model. The server defines a single lease period for all state held by a NFS client. If the client does not renew its lease within the defined period, all state associated with the client's lease may be released by the server. The client may renew its lease with use of the RENEW operation or implicitly by use of other operations (primarily READ).
+With the NFS version 4 protocol, the support for byte range file locking is part of the NFS protocol. The file locking support is structured so that an RPC callback mechanism is not required. This is a departure from the previous versions of the NFS file locking protocol, Network Lock Manager (NLM). The state associated with file locks is maintained at the server under a lease-based model. The server defines a single lease period for all state held by a NFS client. If the client does not renew its lease within the defined period, all state associated with the client's lease may be released by the server. The client may renew its lease with use of the RENEW operation or implicitly by use of other operations (primarily READ).
 
 ## Difference between v3 and v4 locking
 With NFSv4 introducing file locking in its protocol, clients are put to sleep and periodically poll the server for the lock. In NFSv3 and NLM, the client is put to sleep and when the lock is released, the server sends a client a callback and the client is granted the lock. This allows one-way reachability from client to server but can have performance impacts or be less efficient. 
