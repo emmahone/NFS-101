@@ -56,6 +56,8 @@ https://datatracker.ietf.org/doc/html/rfc1813#section-4.2
    Every NFS version 3 protocol client can also potentially be a server, and remote and local mounted file systems can be freely mixed. This leads to some problems when a client travels down the directory tree of a remote file system and reaches the mount point on the server for another remote file system. Allowing the server to follow the second remote mount would require loop detection, server lookup, and user revalidation. Instead, both NFS version 2 protocol and NFS version 3 protocol implementations do not typically let clients cross a server's mount point. When a client does a LOOKUP on a directory on which the server has mounted a file system, the client sees the underlying directory instead of the mounted directory.
 
    For example, if a server has a file system called /usr and mounts another file system on /usr/src, if a client mounts /usr, it does not see the mounted version of /usr/src. A client could do remote mounts that match the server's mount points to maintain the server's view.  In this example, the client would also have to mount /usr/src in addition to /usr, even if they are from the same server.
+   
+   An example of determining which client holds a lock using Linux kernel delving can be found [here](https://utcc.utoronto.ca/~cks/space/blog/linux/NFSServerLockClients).
 
 NFSv4: 
 https://datatracker.ietf.org/doc/html/rfc3530.txt#section-13
