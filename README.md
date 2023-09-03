@@ -49,7 +49,7 @@ These RFCs define `terminology, features, protocol, and behavior` for NFS versio
 NFSv3:
 https://datatracker.ietf.org/doc/html/rfc1813#section-4.2
 
-   The NFS version 3 protocol is designed to allow servers to be as simple and general as possible. The NFSv2 and NFSv3 client/server relationship is classifies as being stateless meaning that the server does not maintain an object tracking the state of clients. Sometimes the simplicity of the server can be a problem, if the client implements complicated file system semantics.
+   The NFS version 3 protocol is designed to allow servers to be as simple and general as possible. The NFSv2 and NFSv3 client/server relationship is classified as being stateless meaning that the server does not maintain an object tracking the state of clients. Sometimes the simplicity of the server can be a problem, if the client implements complicated file system semantics.
 
    For example, some operating systems allow removal of open files.  A process can open a file and, while it is open, remove it from the directory. The file can be read and written as long as the process keeps it open, even though the file has no name in the file system.  It is impossible for a stateless server to implement these semantics.  The client can do some tricks such as renaming the file on remove (to a hidden name), and only physically deleting it on close. The NFS version 3 protocol provides sufficient functionality to implement most file system semantics on a client.
 
